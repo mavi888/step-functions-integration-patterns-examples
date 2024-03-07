@@ -1,0 +1,18 @@
+{
+	"Comment": "Running a workflow within a workflow using the sync integration pattern",
+	"StartAt": "Start new workflow and continue",
+	"States": {
+		"Start new workflow and continue": {
+			"Comment": "Start an execution of another Step Functions state machine and continue when the other one is completed",
+			"Type": "Task",
+			"Resource": "arn:aws:states:::states:startExecution:sync",
+			"Parameters": {
+				"StateMachineArn": "${AnotherStateMachineArn}",
+				"Input": {
+					"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id"
+				}
+			},
+			"End": true
+		}
+	}
+}

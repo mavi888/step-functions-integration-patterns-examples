@@ -1,0 +1,60 @@
+{
+	"Comment": "Running a workflow within a workflow using the sync integration pattern",
+	"StartAt": "Invoke async API and wait for callback",
+	"States": {
+		"Invoke async API and wait for callback": {
+			"Type": "Task",
+			"Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+			"Parameters": {
+				"QueueUrl": "${SQSQueueURL}",
+				"MessageBody": {
+					"taskToken.$": "$$.Task.Token",
+					"payload.$": "$$.Execution.Input"
+				}
+			},
+			"Next": "Check Response Status",
+			"TimeoutSeconds": 300,
+			"Catch": [
+				{
+					"ErrorEquals": ["States.Timeout", "States.TaskFailed"],
+					"Next": "Send Error Notification"
+				}
+			]
+		},
+		"Check Response Status": {
+			"Type": "Choice",
+			"Choices": [
+				{
+					"Variable": "$.result",
+					"NumericEquals": 200,
+					"Next": "Send Success Notification"
+				}
+			],
+			"Default": "Send Error Notification"
+		},
+		"Send Success Notification": {
+			"Type": "Task",
+			"Resource": "arn:aws:states:::sns:publish",
+			"Parameters": {
+				"TopicArn": "${SNSTopicARN}",
+				"Message": {
+					"status": 200,
+					"message": "The async call executed successfully"
+				}
+			},
+			"End": true
+		},
+		"Send Error Notification": {
+			"Type": "Task",
+			"Resource": "arn:aws:states:::sns:publish",
+			"Parameters": {
+				"TopicArn": "${SNSTopicARN}",
+				"Message": {
+					"status": 500,
+					"message": "The async call failed"
+				}
+			},
+			"End": true
+		}
+	}
+}

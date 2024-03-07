@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Running a workflow within a workflow using the sync integration pattern
+
+Resources:
+  MainStepFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: MainStepFunctionExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource: !Ref AnotherStateMachine
+              - Effect: Allow
+                Action:
+                  - states:DescribeExecution
+                  - states:StopExecution
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - events:PutTargets
+                  - events:PutRule
+                  - events:DescribeRule
+                Resource: !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/StepFunctionsGetEventsForStepFunctionsExecutionRule
+
+  # Nested state machine
+  AnotherStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/another-state-machine.asl.json
+
+  # Main state machine
+  MainStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/main-state-machine.asl.json
+      DefinitionSubstitutions:
+        AnotherStateMachineArn: !Ref AnotherStateMachine
+      #Role: !Ref MainStepFunctionRole
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - events:PutTargets
+                - events:PutRule
+                - events:DescribeRule
+              Resource: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/StepFunctionsGetEventsForStepFunctionsExecutionRule
+        - StepFunctionsExecutionPolicy:
+            StateMachineName: !GetAtt AnotherStateMachine.Name
+
+# Outputs
+Outputs:
+  MainStateMachineArn:
+    Value: !Ref MainStateMachine

@@ -1,0 +1,11 @@
+{
+	"StartAt": "Long-running job",
+	"Comment": "Running a workflow for a period of time to see how the parent workflow behaves",
+	"States": {
+		"Long-running job": {
+			"Type": "Wait",
+			"Seconds": 60,
+			"End": true
+		}
+	}
+}

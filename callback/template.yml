@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Running a workflow that sends a task token and gets triggered back
+
+Parameters:
+  Email:
+    Type: String
+    Default: ''
+
+Resources:
+  TaskTokenQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: TaskTokenQueue
+
+  StateMachineResultTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Endpoint: !Ref Email
+          Protocol: email
+
+  MainStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/main-state-machine.asl.json
+      DefinitionSubstitutions:
+        SQSQueueURL: !Ref TaskTokenQueue
+        SNSTopicARN: !Ref StateMachineResultTopic
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt TaskTokenQueue.QueueName
+        - SNSCrudPolicy:
+            TopicName: !GetAtt StateMachineResultTopic.TopicName
+
+  DoSomeAsyncWorkFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/
+      Handler: doSomeAsyncWork.handler
+      Runtime: nodejs20.x
+      Environment:
+        Variables:
+          AWS_REGION_ID: !Sub ${AWS::Region}
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - states:SendTaskSuccess
+                - states:SendTaskFailure
+              Resource: !Ref MainStateMachine
+      Events:
+        SQS:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt TaskTokenQueue.Arn
+            BatchSize: 1
