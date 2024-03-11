@@ -5,7 +5,7 @@
 		"Start new workflow and continue": {
 			"Comment": "Start an execution of another Step Functions state machine and continue when the other one is completed",
 			"Type": "Task",
-			"Resource": "arn:aws:states:::states:startExecution:sync",
+			"Resource": "arn:aws:states:::states:startExecution.sync",
 			"Parameters": {
 				"StateMachineArn": "${AnotherStateMachineArn}",
 				"Input": {
