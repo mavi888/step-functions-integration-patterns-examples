@@ -1,0 +1,76 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Running a workflow that sends a task token and gets triggered back
+
+Parameters:
+  Email:
+    Type: String
+    Default: ''
+
+Resources:
+  SagaPatternStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/statemachine.asl.json
+      DefinitionSubstitutions:
+        BookAHotelFunction: !Ref BookAHotelFunction
+        BookACarFunction: !Ref BookACarFunction
+        BookAFlightFunction: !Ref BookAFlightFunction
+        CancelAHotelFunction: !Ref CancelAHotelFunction
+        CancelACarFunction: !Ref CancelACarFunction
+        CancelAFlightFunction: !Ref CancelAFlightFunction
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref BookAHotelFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref BookACarFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref BookAFlightFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CancelAHotelFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CancelACarFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CancelAFlightFunction
+
+  BookAHotelFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/
+      Handler: book.hotelHandler
+      Runtime: nodejs20.x
+
+  BookAFlightFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/
+      Handler: book.flightHandler
+      Runtime: nodejs20.x
+
+  BookACarFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/
+      Handler: book.carHandler
+      Runtime: nodejs20.x
+
+  CancelAHotelFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/
+      Handler: cancel.hotelHandler
+      Runtime: nodejs20.x
+
+  CancelAFlightFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/
+      Handler: cancel.flightHandler
+      Runtime: nodejs20.x
+
+  CancelACarFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/
+      Handler: cancel.carHandler
+      Runtime: nodejs20.x

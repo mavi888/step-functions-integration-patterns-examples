@@ -1,0 +1,121 @@
+{
+	"StartAt": "BookAHotel",
+	"States": {
+		"BookAHotel": {
+			"Next": "BookAFlight",
+			"Retry": [
+				{
+					"ErrorEquals": [
+						"Lambda.ServiceException",
+						"Lambda.AWSLambdaException",
+						"Lambda.SdkClientException"
+					],
+					"IntervalSeconds": 2,
+					"MaxAttempts": 2,
+					"BackoffRate": 2
+				}
+			],
+			"Catch": [
+				{
+					"ErrorEquals": ["States.ALL"],
+					"ResultPath": "$.BookAHotelError",
+					"Next": "CancelHotel"
+				}
+			],
+			"Type": "Task",
+			"ResultPath": "$.ReserveFlightResult",
+			"Resource": "arn:aws:states:::lambda:invoke",
+			"Parameters": {
+				"FunctionName": "${BookAHotelFunction}",
+				"Payload.$": "$"
+			}
+		},
+		"BookAFlight": {
+			"Next": "BookACar",
+			"Retry": [
+				{
+					"ErrorEquals": [
+						"Lambda.ServiceException",
+						"Lambda.AWSLambdaException",
+						"Lambda.SdkClientException"
+					],
+					"IntervalSeconds": 2,
+					"MaxAttempts": 2,
+					"BackoffRate": 2
+				}
+			],
+			"Catch": [
+				{
+					"ErrorEquals": ["States.ALL"],
+					"ResultPath": "$.BookAFlightError",
+					"Next": "CancelFlight"
+				}
+			],
+			"Type": "Task",
+			"ResultPath": "$.BookAFlightResult",
+			"Resource": "arn:aws:states:::lambda:invoke",
+			"Parameters": {
+				"FunctionName": "${BookAFlightFunction}",
+				"Payload.$": "$"
+			}
+		},
+		"BookACar": {
+			"End": true,
+			"Retry": [
+				{
+					"ErrorEquals": [
+						"Lambda.ServiceException",
+						"Lambda.AWSLambdaException",
+						"Lambda.SdkClientException"
+					],
+					"IntervalSeconds": 2,
+					"MaxAttempts": 2,
+					"BackoffRate": 2
+				}
+			],
+			"Catch": [
+				{
+					"ErrorEquals": ["States.ALL"],
+					"ResultPath": "$.BookACarError",
+					"Next": "CancelCar"
+				}
+			],
+			"Type": "Task",
+			"ResultPath": "$.BookACarResult",
+			"Resource": "arn:aws:states:::lambda:invoke",
+			"Parameters": {
+				"FunctionName": "${BookACarFunction}",
+				"Payload.$": "$"
+			}
+		},
+		"CancelHotel": {
+			"End": true,
+			"Type": "Task",
+			"ResultPath": "$.CancelHotelResult",
+			"Resource": "arn:aws:states:::lambda:invoke",
+			"Parameters": {
+				"FunctionName": "${CancelAHotelFunction}",
+				"Payload.$": "$"
+			}
+		},
+		"CancelFlight": {
+			"Next": "CancelHotel",
+			"Type": "Task",
+			"ResultPath": "$.CancelFlightResult",
+			"Resource": "arn:aws:states:::lambda:invoke",
+			"Parameters": {
+				"FunctionName": "${CancelAFlightFunction}",
+				"Payload.$": "$"
+			}
+		},
+		"CancelCar": {
+			"Next": "CancelFlight",
+			"Type": "Task",
+			"Resource": "arn:aws:states:::lambda:invoke",
+			"Parameters": {
+				"FunctionName": "${CancelAFlightFunction}",
+				"Payload.$": "$"
+			}
+		}
+	}
+}

@@ -1,3 +1,4 @@
 .vscode/settings.json
 callback/samconfig.toml
 sync/samconfig.toml
+saga-pattern/samconfig.toml
